@@ -11,6 +11,7 @@ import (
 
 	"my-platform/internal/handlers"
 	"my-platform/internal/middleware"
+	"my-platform/internal/websocket"
 )
 
 // This struct will hold our loaded configuration
@@ -53,6 +54,11 @@ func main() {
 	defer db.Close()
 	log.Println("Successfully connected to Supabase (PostgreSQL)!")
 
+	// Create and Run the hub
+	hub := websocket.NewHub()
+	go hub.Run()
+	log.Println("WebSocket Hub started.")
+
 	// Set up our Gin router
 	r := gin.Default()
 
@@ -66,7 +72,8 @@ func main() {
 	// Create an instance o the handler
 	authHandler := handlers.NewAuthHandler(db, config.JWT_SECRET)
 	creatorHandler := handlers.NewCreatorHandler(db)
-	donationHandler := handlers.NewDonationHandler(db, config.MIDTRANS_SERVER_KEY)
+	donationHandler := handlers.NewDonationHandler(db, config.MIDTRANS_SERVER_KEY, hub)
+	wsHandler := handlers.NewWebSocketHandler(db, hub)
 
 	// All API routes under /api
 	api := r.Group("/api")
@@ -83,11 +90,15 @@ func main() {
 		protected.Use(middleware.AuthMiddleware(config.JWT_SECRET))
 		{
 			protected.GET("/me", creatorHandler.GetMyProfile)
+			protected.GET("/me/donations", creatorHandler.GetMyDonations)
 		}
 
 		api.POST("/webhook/payment", donationHandler.HandlePaymentNotification)
 		api.POST("/donate/:username", donationHandler.CreateDonation)
 	}
+
+	// Websocket Route
+	r.GET("/ws/:secretToken", wsHandler.ServerWs)
 
 	// Start the server
 	log.Println("Server starting on http://localhost:8080")

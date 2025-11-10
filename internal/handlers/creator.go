@@ -33,7 +33,7 @@ func (h *CreatorHandler) GetMyProfile(c *gin.Context) {
 		return
 	}
 
-  // Fetch the creator profile from the database
+	// Fetch the creator profile from the database
 	var profile models.Creator
 	query := `SELECT id, user_id, username, display_name, widget_secret_token 
             FROM creators WHERE user_id = $1`
@@ -46,4 +46,32 @@ func (h *CreatorHandler) GetMyProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, profile)
+}
+
+func (h *CreatorHandler) GetMyDonations(c *gin.Context) {
+	// Get the userID from the context
+	userID_any, _ := c.Get("userID")
+	userID := userID_any.(int)
+
+	// Fetch the creator's ID from their user_id
+	var creator models.Creator
+	err := h.DB.Get(&creator, "SELECT id FROM creators WHERE user_id = $1", userID)
+	if err != nil {
+		log.Println("Failed to find creator for user_id:", userID)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Creator profile not found"})
+		return
+	}
+
+	// Fetch all donations for this creator, newest first
+	var donations []models.Donation
+	query := `SELECT * FROM donations WHERE creator_id = $1 ORDER BY created_at DESC`
+	err = h.DB.Select(&donations, query, creator.ID)
+	if err != nil {
+		log.Println("Failed to get donations:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch donations"})
+		return
+	}
+
+	// Return the list
+	c.JSON(http.StatusOK, donations)
 }
