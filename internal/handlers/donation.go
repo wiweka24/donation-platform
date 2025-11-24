@@ -106,17 +106,6 @@ func (h *DonationHandler) CreateDonation(c *gin.Context) {
 		CustomerDetail: &midtrans.CustomerDetails{
 			FName: donorName,
 		},
-		// Items: &[]midtrans.ItemDetails{
-		// 	{
-		// 		ID:    "DONATION",
-		// 		Price: int64(req.AmountCents),
-		// 		Qty:   1,
-		// 		Name:  "Donation to " + username,
-		// 	},
-		// },
-		// CustomField1: strconv.Itoa(creator.ID),
-		// CustomField2: req.DonorName,
-		// CustomField3: req.DonorMessage,
 	}
 
 	// Call Midtrans
@@ -164,50 +153,11 @@ func (h *DonationHandler) HandlePaymentNotification(c *gin.Context) {
 		return
 	}
 
-	// if apiResp.GrossAmount != notification.GrossAmount {
-	// 	log.Println("FRAUD ATTEMPT: GrossAmount mismatch")
-	// 	c.JSON(http.StatusForbidden, gin.H{"error": "Amount mismatch"})
-	// 	return
-	// }
-
-	// amountFloat, _ := strconv.ParseFloat(apiResp.GrossAmount, 64)
-	// amountCents := int(amountFloat * 100)
-
-	// creatorID, parseErr := strconv.Atoi(notification.CustomField1)
-	// if parseErr != nil {
-	// 	log.Println("Failed to parse creatorID from custom field:", parseErr)
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid custom field data"})
-	// 	return
-	// }
-
-	// donorName := notification.CustomField2
-	// if donorName == "" {
-	// 	donorName = "Anonymous"
-	// }
-	// donorMessage := notification.CustomField3
-
-	// query := `INSERT INTO donations (creator_id, amount_cents, donor_name, donor_message, payment_gateway_tx_id)
-	//           VALUES ($1, $2, $3, $4, $5)
-	//           ON CONFLICT (payment_gateway_tx_id)
-	//           DO NOTHING`
-
-	// res, parseErr := h.DB.Exec(query, creatorID, amountCents, donorName, donorMessage, apiResp.TransactionID)
-	// if parseErr != nil {
-	// 	log.Println("Failed to insert donation:", parseErr)
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-	// 	return
-	// }
-
-	// rowsAffected, _ := res.RowsAffected()
-	// if rowsAffected == 0 {
-	// 	log.Println("Duplicate donation notification received, already processed:", apiResp.TransactionID)
-	// 	c.JSON(http.StatusOK, gin.H{"status": "ok (duplicate)"})
-	// 	return
-	// }
-
 	var dbErr error
 	var donation models.Donation
-	query := `SELECT * FROM donations WHERE order_id = $1`
+	query := `SELECT id, creator_id, amount_cents, donor_name, donor_message, 
+	          status, media_type, media_url, media_start_seconds, media_end_seconds, order_id 
+	          FROM donations WHERE order_id = $1`
 	dbErr = h.DB.Get(&donation, query, apiResp.OrderID)
 	if dbErr != nil {
 		log.Println("Failed to find donation by order_id:", apiResp.OrderID)

@@ -14,13 +14,13 @@ type User struct {
 
 // Creator represents a creator's public profile and settings.
 type Creator struct {
-	ID                int       `db:"id"`
-	UserID            int       `db:"user_id"`
-	Username          string    `db:"username"`
-	DisplayName       string    `db:"display_name"`
-	WidgetSecretToken string    `db:"widget_secret_token"`
-	CreatedAt         time.Time `db:"created_at"`
-	UpdatedAt         time.Time `db:"updated_at"`
+	ID                int       `db:"id" json:"id"`
+	UserID            int       `db:"user_id" json:"user_id"`
+	Username          string    `db:"username" json:"username"`
+	DisplayName       string    `db:"display_name" json:"display_name"`
+	WidgetSecretToken string    `db:"widget_secret_token" json:"widget_secret_token"`
+	CreatedAt         time.Time `db:"created_at" json:"created_at`
+	UpdatedAt         time.Time `db:"updated_at" json:"updated_at`
 }
 
 // Donation represents a single completed donation.
